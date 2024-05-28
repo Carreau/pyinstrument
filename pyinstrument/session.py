@@ -120,28 +120,40 @@ class Session:
         :rtype: A :class:`Frame` object, or None if the session is empty.
         """
         root_frame = build_frame_tree(self.frame_records)
+        print("Original Root from from build_frame_tree is", root_frame)
 
         if root_frame is None:
             return None
 
         if trim_stem:
             root_frame = self._trim_stem(root_frame)
+            print("Trimmed Root from from build_frame_tree is", root_frame)
 
         return root_frame
 
     def _trim_stem(self, frame: Frame):
         # trim the start of the tree before any branches.
         # we also don't want to trim beyond the call to profiler.start()
+        print("Here are the stack id from the start of the call stack, up to the top:")
+        print("stack_ids:")
+        for sid in [frame_info_get_identifier(info) for info in self.start_call_stack]:
+            print("    ", sid)
 
+        print("Now I'm going to keep removing top frame as long as it matches the above ids.")
+        print("Hopefully all those match until pyinstrument's magics frames.")
         start_stack = deque(frame_info_get_identifier(info) for info in self.start_call_stack)
-
-        if start_stack.popleft() != frame.identifier:
+        frame_id = start_stack.popleft()
+        if frame_id != frame.identifier:
             # the frame doesn't match where the profiler was started. Don't trim.
+            print("  _trim_stem not trimming as ", frame_id, "=!", frame.identifier)
             return frame
 
         while frame.total_self_time == 0 and len(frame.children) == 1:
             # check child matches the start_call_stack, otherwise stop descending
-            if len(start_stack) == 0 or frame.children[0].identifier != start_stack.popleft():
+            spopleft = start_stack.popleft()
+            print("  Looking at frame:", frame.children[0].identifier, " vs stack:", spopleft)
+            if len(start_stack) == 0 or frame.children[0].identifier != spopleft:
+                print("  Breaking")
                 break
 
             frame = frame.children[0]
