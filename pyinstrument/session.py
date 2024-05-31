@@ -147,16 +147,47 @@ class Session:
             # the frame doesn't match where the profiler was started. Don't trim.
             print("  _trim_stem not trimming as ", frame_id, "=!", frame.identifier)
             return frame
-
+        print("Will start removing")
+        print(
+            "While: total_self_time =",
+            frame.total_self_time,
+            "frame.time =",
+            frame.time,
+            "len(frame.children) = ",
+            len(frame.children),
+        )
         while frame.total_self_time == 0 and len(frame.children) == 1:
             # check child matches the start_call_stack, otherwise stop descending
             spopleft = start_stack.popleft()
-            print("  Looking at frame:", frame.children[0].identifier, " vs stack:", spopleft)
+            identical = frame.children[0].identifier == spopleft
+            if identical:
+                print("  identical frames:", frame.children[0].identifier)
+            else:
+                print(
+                    "  Looking at frame:",
+                    frame.children[0].identifier,
+                    " vs stack:",
+                    spopleft,
+                    "identical:",
+                    frame.children[0].identifier == spopleft,
+                )
+            if len(start_stack) == 0:
+                print("  Will break as there are no more stack")
             if len(start_stack) == 0 or frame.children[0].identifier != spopleft:
                 print("  Breaking")
                 break
 
             frame = frame.children[0]
+            print("  Next frame")
+            print(
+                "  While: total_self_time = ",
+                frame.total_self_time,
+                "frame.time =",
+                frame.time,
+                "len(frame.children) = ",
+                len(frame.children),
+            )
+        print("end removing")
 
         frame.remove_from_parent()
         return frame
